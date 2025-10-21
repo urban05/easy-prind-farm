@@ -1,3 +1,64 @@
+# WIP – easy-prind-farm – WIP
+
+
+
+<img width="250" height="250" alt="easy-prind-farm-Logo" src="https://github.com/user-attachments/assets/1230254d-240c-4d9d-9bfa-fcbaa777194c" />
+
+
+
+The goal of this fork is to make setting up and operating an entire 3D printing farm as easy as possible.  
+Educational institutions, makerspaces, and other users who require multi-printer setups can greatly benefit from a plug-and-play system that unifies every aspect involved in running a 3D printing farm.
+
+
+## Overview
+
+easy-prind-farm builds on the excellent [mkuf/prind](https://github.com/mkuf/prind) base stack and extends it into a complete print-farm management system.  
+The project runs fully containerized and can therefore operate on almost any host – from a Raspberry Pi to a workstation or dedicated server.
+
+
+### WIP – Components – WIP
+
+The system will consist of four main components:
+
+1. **Web UI** – Monitoring, job control, and I/O access  
+2. **File I/O** – Shared folder or network mount for file exchange  
+3. **Slicer** – Converts 3D model files into printer-ready G-Code  
+4. **Queue & Printer Controller** – Automates job distribution, queue management, and communication with Klipper/Moonraker-based setups  
+
+To make setup as easy and accessible as possible, easy-prind-farm includes a **Setup Wizard**.  
+For advanced users, the wizard provides a **templating system** to simplify scaling and modifying existing printer farms.  
+Expert users can access detailed step-by-step documentation of every configuration operation the wizard performs, enabling highly customized setups.
+
+### WIP – Planned Architecture – WIP
+
+#### Flow from User Input to Printed File
+
+```mermaid
+---
+title: Flow from User Input to Printed File
+---
+flowchart TD
+    START([User Inputs File]) --> NFS
+    NFS[[Network File Share]] --> Inbox
+    Outbox --> NFS
+    Inbox[Inbox] --> Slicer[[Slicer]]
+    Slicer --> ES{Success?}
+    ES -->|Error| Outbox[Outbox]
+    ES -->|Success| RRFD[[Round-Robin File Distributor 1...n]]
+    RRFD -->|First File to| Q1[Queue Printer 1]
+    RRFD -->|Last File to| Qn[Queue Printer n]
+    Q1 -->|Watched by| OP1[[Controller Printer 1]]
+    Qn -->|Watched by| OPn[[Controller Printer n]]
+    OP1 --> STOP([File has been printed])
+    OPn --> STOP
+```
+
+---
+
+# Original prind README below
+
+---
+
 <p align=center><img src=img/prind-logo.png height=400px></p>
 
 # prind
