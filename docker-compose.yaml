@@ -191,6 +191,33 @@ services:
       traefik.http.routers.octoprint.rule: PathPrefix(`/spoolman`)
       traefik.http.routers.octoprint.entrypoints: web
 
+  octoeverywhere:
+    image: octoeverywhere/octoeverywhere:latest
+    restart: unless-stopped
+    volumes:
+      - octoeverywhere-data:/data
+    profiles:
+      - octoeverywhere
+    environment:
+      COMPANION_MODE: klipper
+      MOONRAKER_PORT: 80
+    labels:
+      org.prind.service: octoeverywhere
+
+  laserweb:
+    image: mkuf/laserweb:latest
+    restart: unless-stopped
+    profiles:
+      - laserweb
+    labels:
+      org.prind.service: laserweb
+      traefik.enable: true
+      traefik.http.services.laserweb.loadbalancer.server.port: 80
+      traefik.http.routers.laserweb.rule: PathPrefix(`/laserweb`)
+      traefik.http.routers.laserweb.entrypoints: web
+      traefik.http.routers.laserweb.middlewares: strip-laserweb@docker
+      traefik.http.middlewares.strip-laserweb.stripprefix.prefixes: /laserweb
+
   ## Accompanying Services/Infra
   ##
 
@@ -206,7 +233,7 @@ services:
 
   ## Loadbalancer/Proxy
   traefik:
-    image: traefik:3.5
+    image: traefik:3.6
     command:
       - "--accesslog"
       - "--providers.docker=true"
@@ -233,3 +260,4 @@ volumes:
       type: tmpfs
       device: tmpfs
   spoolman-db:
+  octoeverywhere-data:

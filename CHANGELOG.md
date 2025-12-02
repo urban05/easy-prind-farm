@@ -11,10 +11,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 ### Removed
 
-**Full Changelog**: https://github.com/mkuf/prind/compare/v1.18.0...vX.X.X
+**Full Changelog**: https://github.com/mkuf/prind/compare/v1.21.0...vX.X.X
 -->
 
-## [v1.18.0]
+## [v1.21.0] - 2025-11-29
+### Added
+* **New Service:** LaserWeb4 #239
+### Changed
+* scripts: build: use extracted VERSION if upstream has no tags
+* scripts: build: limit backfill if upstream has less tags then requested
+
+**Full Changelog**: https://github.com/mkuf/prind/compare/v1.20.0...v1.21.0
+
+## [v1.20.0] - 2025-11-24
+
+A helper script has been introduced to simplify builds and interacting with klipper scripts.  
+If you're already using prind, simply run the following command and you'll be able to follow the instructions in the README again.  
+
+```bash
+cd prind
+
+cat <<EOF | sudo install /dev/stdin /usr/local/bin/prind-tools
+#!/bin/sh
+docker compose -f $(pwd)/docker-compose.extra.tools.yaml run --rm tools "\$@"
+EOF
+```
+
+### Added
+* docs: new `prind-tools` wrapper script
+* `docker-compose.extra.tools.yaml` used by `prind-tools` script
+* klipper: add a symlink to provide the venv at ${HOME}/klippy-env in the tools image #241
+### Changed
+* docs: update build to use `prind-tools`
+* docs: update calibrate shaper to use `prind-tools`
+### Removed
+* `docker-compose.extra.make.yaml` and `docker-compose.extra.calibrate-shaper.yaml` have been consolidated into `docker-compose.extra.tools.yaml`
+* klipper: remove redundant copy statements from tools image after #242
+
+**Full Changelog**: https://github.com/mkuf/prind/compare/v1.19.0...v1.20.0
+
+## [v1.19.0] - 2025-11-15
+### Added
+* **New Service:** OctoEverywhere #237
+### Fixed
+* simulavr: build failed after base images were upgraded to trixie
+### Changed
+* traefik: upgrade to 3.6
+* moonraker: lmdb upgrade to 1.7.5
+
+**Full Changelog**: https://github.com/mkuf/prind/compare/v1.18.0...v1.19.0
+
+## [v1.18.0] - 2025-09-19
 ### Added
 * ci: force image build if source changes in main
 * build: allow specific upstream versions to be ignored

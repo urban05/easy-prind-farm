@@ -86,6 +86,9 @@ With a single command, you can start up Klipper and its accompanying application
 |<img src="https://avatars.githubusercontent.com/u/46323662?s=200&v=4" width=30px>|[moonraker-obico](https://github.com/TheSpaghettiDetective/moonraker-obico)|`upstream`|[Additional Profiles](#moonraker-obico)|
 |<img src="https://raw.githubusercontent.com/Donkie/Spoolman/master/client/icons/spoolman.svg" width=30px>|[Spoolman](https://github.com/Donkie/Spoolman)|`upstream`|[Additional Profiles](#spoolman)|
 |<img src="https://avatars.githubusercontent.com/u/41749659?s=200&v=4" width=30px>|[µStreamer](https://github.com/pikvm/ustreamer)|prind @ [docker/ustreamer](docker/ustreamer)|[Add your Configuration](#add-your-configuration-to-docker-composeoverrideyaml)<br>[Multiple Webcams](https://github.com/mkuf/prind?tab=readme-ov-file#multiple-webcams)|
+|<img src="https://octoeverywhere.com/img/logo/logo_maskable.svg" width=30px>|[OctoEverywhere](https://octoeverywhere.com)|`upstream`|[Additional Profiles](#octoeverywhere)|
+|<img src="https://raw.githubusercontent.com/ssendev/LaserWeb4/refs/heads/v4.1/src/favicon.ico" width=30px>|[LaserWeb4](https://laserweb.yurl.ch/)|prind @ [docker/laserweb](docker/laserweb)|[Additional Profiles](#laserweb)|
+
 </details>
 
 ## Getting started
@@ -96,25 +99,41 @@ Follow the official guides to install and set them up:
 * [Install Docker Compose v2](https://docs.docker.com/compose/cli-command/#installing-compose-v2)
 
 Clone this repository onto your Docker host using Git:
-```
+```bash
 git clone https://github.com/mkuf/prind
 ```
+
+Install the `prind-tools` helper script.
+```bash
+cd prind
+
+cat <<EOF | sudo install /dev/stdin /usr/local/bin/prind-tools
+#!/bin/sh
+docker compose -f $(pwd)/docker-compose.extra.tools.yaml run --rm tools "\$@"
+EOF
+```
+
 Unless otherwise specified, all commands mentioned in the documentation should be run from the root of the repository.
 
 ### Build the MCU Code
 Before using Klipper, you'll have to build and flash the microcontroller-code for your printers mainboard.  
-As this can be accomplished via docker, we can create an alias that replaces `make` with the appropriate docker compose command. After setting this alias, follow the Instructions on finding your printer, building and flashing the microcontroller found in the [Klipper Docs](https://www.klipper3d.org/Installation.html#building-and-flashing-the-micro-controller).  
+This can be done in a container by calling the build commands via `prind-tools`.  
+Follow the Instructions on finding your printer, building and flashing the microcontroller found in the [Klipper Docs](https://www.klipper3d.org/Installation.html#building-and-flashing-the-micro-controller).  
 
 Adapted from the official Docs, a generic Build would look like this.
-```
-alias make="docker compose -f docker-compose.extra.make.yaml run --rm make"
-
-make menuconfig
-make
-make flash FLASH_DEVICE=/dev/serial/by-id/<my printer>
+```bash
+prind-tools "make menuconfig"
+prind-tools "make"
+prind-tools "make flash FLASH_DEVICE=/dev/serial/by-id/<my printer>"
 ```
 
-If your Board can be flashed via SD-Card, you may want to omit `make flash` and retrieve the `klipper.bin` from the `out` directory that is created by `make`. Follow your boards instructions on how to proceed with flashing via SD-Card.
+If your Board can be flashed via SD-Card, you can also use the `flash-sdcard.sh` script provided by klipper
+
+```bash
+prind-tools "scripts/flash-sdcard.sh <device> <board>"
+```
+
+If no official flash method is available, you can retrieve the `klipper.bin` from the `out` directory that is created by `make` and Follow your boards instructions on how to proceed with flashing.
 
 ### Add your Configuration to docker-compose.override.yaml
 Locate the `webcam` Service within `docker-compose.override.yaml` and update the `device` Section with the Device Name of your Webcam.  
@@ -268,6 +287,37 @@ docker compose --profile fluidd --profile spoolman up -d
 
 Navigate to `http://<yourprinter>/spoolman` to access the spool manager webinterface.
 
+#### octoeverywhere
+[OctoEverywhere](https://octoeverywhere.com) can be enabled via the `octoeverywhere` Profile.
+
+Add your Printers IP address to `docker-compose.override.yaml` like so, then start the stack.
+```yaml
+services:
+  octoeverywhere:
+    environment:
+      PRINTER_IP: 10.0.0.11
+```
+```
+docker compose --profile mainsail --profile octoeverywhere up -d
+```
+
+After the stack has started, get the logs of the octoeverywhere service to retrieve the code to link your printer.
+
+```
+docker compose logs octoeverywhere
+```
+
+#### laserweb
+
+[LaserWeb4](https://laserweb.yurl.ch/) can be enabled via the `laserweb` Profile. The image is based on [a fork](https://github.com/ssendev/LaserWeb4) which includes support for connecting to Moonraker.
+
+```
+docker compose --profile fluidd --profile laserweb up -d
+```
+
+After the stack has started, navigate to `http://<yourprinter>/laserweb/`.  
+In the `Comms` tab, select `SERVER: Moonraker`, add your Printers IP Address as `SERVER IP` and click `Connect`
+
 ## Updating
 Images are built daily and tagged with `latest` and the [git description](https://git-scm.com/docs/git-describe#_examples) of the remote repo. 
 Example: 
@@ -318,16 +368,13 @@ docker compose cp klipper:/tmp/resonances_x_20220708_124515.csv ./resonances/
 docker compose cp klipper:/tmp/resonances_y_20220708_125150.csv ./resonances/
 ```
 
-`docker-compose.extra.calibrate-shaper.yaml` is set up to run `calibrate_shaper.py`, so any options supported by the script can also be used with the container. 
-Set an alias to save yourself from typing the the docker compose command multiple times. The generated Images are located besides the csv files in `./resonances`
+To analyze the generated files, call `calibrate_shaper.py` via `prind-tools`
 ```
-alias calibrate_shaper="docker compose -f docker-compose.extra.calibrate-shaper.yaml run --rm calibrate_shaper"
-
-calibrate_shaper resonances_x_20220708_124515.csv -o cal_x.png
+prind-tools "scripts/calibrate_shaper.py resonances/resonances_x_20220708_124515.csv -o resonances/cal_x.png"
   [...]
   Recommended shaper is ei @ 90.2 Hz
 
-calibrate_shaper resonances_y_20220708_125150.csv -o cal_y.png
+prind-tools "scripts/calibrate_shaper.py resonances/resonances_y_20220708_125150.csv -o resonances/cal_y.png"
   [...]
   Recommended shaper is mzv @ 48.2 Hz
 ```
